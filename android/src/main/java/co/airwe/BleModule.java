@@ -61,7 +61,7 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
     public void startScanning() {
       Notification.Builder builder = new Notification.Builder(reactContext);
 
-      builder.setSmallIcon(android.R.mipmap.ic_launcher);
+      builder.setSmallIcon(R.mipmap.ic_launcher);
       builder.setContentTitle("Scanning for Beacons");
 
       //Intent intent = new Intent(this, getCurrentActivity().getClass());
