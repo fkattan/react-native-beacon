@@ -10,22 +10,31 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.RemoteException;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Identifier;
 import org.altbeacon.beacon.MonitorNotifier;
+import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 
+import java.util.Collection;
 
-public class BleModule extends ReactContextBaseJavaModule implements LifecycleEventListener, BeaconConsumer, MonitorNotifier {
+
+public class BleModule extends ReactContextBaseJavaModule implements LifecycleEventListener, BeaconConsumer, MonitorNotifier, RangeNotifier {
 
     private final String TAG = "BleModule";
 
@@ -40,7 +49,12 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
     public static final String IBEACON_UUID = "c5f4271d-1141-462f-9b31-4ba0a39ef7fb";
 
 
-    private final ReactApplicationContext reactContext;
+    private static final String BLE_START_RANGING_ERROR_EVENT = "co.airwe.ble.startRangingBeaconsError";
+    private static final String BLE_STOP_RANGING_ERROR_EVENT = "co.airwe.ble.stopRangingBeaconsError";
+    private static final String BLE_START_MONITORING_ERROR_EVENT = "co.airwe.ble.startMonitoringBeaconsError";
+    private static final String BLE_STOP_MONITORING_ERROR_EVENT = "co.airwe.ble.stopMonitoringBeaconsError";
+
+  private final ReactApplicationContext reactContext;
     private BeaconManager mBeaconManager;
     private boolean isBleReady = false;
 
@@ -59,26 +73,31 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
         return "Ble";
     }
 
+
     @ReactMethod
     public void startMonitoringRegion() {
 
-      if(!isBleReady) {
-        Log.e(TAG, "Invalid call to startMonitoringRegion before BLE is initialized");
-        return;
-      }
-
-      //Identifier namespaceIdentifier = Identifier.parse(EDDYSTONE_NAMESPACE_ID);
-      Identifier namespaceIdentifier = Identifier.parse(IBEACON_UUID);
-      Region region = new Region(BLE_REGION_ID, namespaceIdentifier, null, null);
-      mBeaconManager.addMonitorNotifier(this);
-
       try {
-        mBeaconManager.startMonitoringBeaconsInRegion(region);
+        requireBleReady();
+
+        mBeaconManager.addMonitorNotifier(this);
+        mBeaconManager.startMonitoringBeaconsInRegion(getDefaultRegion());
 
       } catch (RemoteException e) {
         Log.e(TAG, "Error trying to monitor Region: " + BLE_REGION_ID);
         e.printStackTrace();
+
+        WritableMap params = Arguments.createMap();
+        params.putString("message", e.getMessage());
+        params.putString("stackTrace", e.getStackTrace().toString());
+        params.putString("type", "RemoteException");
+        sendEvent(reactContext, BLE_START_MONITORING_ERROR_EVENT, params);
+
+      } catch (Exception e) {
+        Log.e(TAG, e.getMessage());
+        return;
       }
+
 
     }
 
@@ -86,12 +105,71 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
     @ReactMethod
     public void stopMonitoringRegion() {
       try {
-        mBeaconManager.stopMonitoringBeaconsInRegion(new Region(BLE_REGION_ID, null, null, null));
+        requireBleReady();
+        mBeaconManager.stopMonitoringBeaconsInRegion(getDefaultRegion());
+
       } catch (RemoteException e) {
         Log.e(TAG, "Error trying to stop monitoring Region: " + BLE_REGION_ID);
         e.printStackTrace();
+
+        WritableMap params = Arguments.createMap();
+        params.putString("message", e.getMessage());
+        params.putString("stackTrace", e.getStackTrace().toString());
+        params.putString("type", "RemoteException");
+        sendEvent(reactContext, BLE_STOP_MONITORING_ERROR_EVENT, params);
+
+      } catch (Exception e) {
+        Log.e(TAG, e.getMessage());
+        return;
       }
     }
+
+    @ReactMethod
+    public void startRangingRegion() {
+      try {
+        requireBleReady();
+        mBeaconManager.addRangeNotifier(this);
+        mBeaconManager.startRangingBeaconsInRegion(getDefaultRegion());
+      } catch(RemoteException e) {
+        Log.e(TAG, "Error trying to start ranging beacons in region: " + BLE_REGION_ID);
+        e.printStackTrace();
+
+        WritableMap params = Arguments.createMap();
+        params.putString("message", e.getMessage());
+        params.putString("stackTrace", e.getStackTrace().toString());
+        params.putString("type", "RemoteException");
+        sendEvent(reactContext, BLE_START_RANGING_ERROR_EVENT, params);
+
+      } catch (Exception e) {
+        Log.e(TAG, e.getMessage());
+        return;
+      }
+    }
+
+
+    @ReactMethod
+    public void stopRangingRegion() {
+      try {
+        requireBleReady();
+        mBeaconManager.stopRangingBeaconsInRegion(getDefaultRegion());
+
+      } catch(RemoteException e) {
+        Log.e(TAG, "Error trying to stop ranging beacons in region: " + BLE_REGION_ID);
+        e.printStackTrace();
+
+        WritableMap params = Arguments.createMap();
+        params.putString("message", e.getMessage());
+        params.putString("stackTrace", e.getStackTrace().toString());
+        params.putString("type", "RemoteException");
+        sendEvent(reactContext, BLE_STOP_RANGING_ERROR_EVENT, params);
+
+      } catch (Exception e) {
+        Log.e(TAG, e.getMessage());
+        return;
+      }
+
+    }
+
 
     @SuppressLint("NewApi")
     @ReactMethod
@@ -226,7 +304,48 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
           " Region: " + region.getUniqueId());
     }
 
+    // RangeNotifier
+
+    @Override
+    public void didRangeBeaconsInRegion(Collection<Beacon> collection, Region region) {
+
+    }
+
     // Private Methods
+
+
+    private Region getDefaultRegion() {
+
+      //Identifier namespaceIdentifier = Identifier.parse(EDDYSTONE_NAMESPACE_ID);
+      Identifier namespaceIdentifier = Identifier.parse(IBEACON_UUID);
+      Region region = new Region(BLE_REGION_ID, namespaceIdentifier, null, null);
+
+      return region;
+    }
+
+  private void requireBleReady() throws Exception {
+
+      if(!isBleReady) {
+
+        final String message = "Invalid call to beacon ranging or monitoring; BLE not ready. Make sure to call initializeBeaconManager before making this call";
+
+        Log.e(TAG, message);
+
+        WritableMap params = Arguments.createMap();
+        params.putString("message", message);
+        sendEvent(reactContext, BLE_START_MONITORING_ERROR_EVENT, params);
+
+        throw new Exception(message);
+      }
+
+      return;
+    }
+
+    private void sendEvent(ReactContext context, String eventName, @Nullable WritableMap params) {
+      context
+        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+        .emit(eventName, params);
+    }
 
     private Class getMainActivityClassName(Context context) throws ClassNotFoundException {
       Log.d(TAG, "in getMainActivityClassName, Context: " + context);
@@ -245,4 +364,5 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
 
       return mainActivityClass;
     }
+
 }
