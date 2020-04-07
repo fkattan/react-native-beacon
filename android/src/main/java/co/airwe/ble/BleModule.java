@@ -54,7 +54,7 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
     private static final String BLE_START_MONITORING_ERROR_EVENT = "co.airwe.ble.startMonitoringBeaconsError";
     private static final String BLE_STOP_MONITORING_ERROR_EVENT = "co.airwe.ble.stopMonitoringBeaconsError";
 
-  private final ReactApplicationContext reactContext;
+    private final ReactApplicationContext reactContext;
     private BeaconManager mBeaconManager;
     private boolean isBleReady = false;
 
@@ -67,12 +67,10 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
       mBeaconManager = BeaconManager.getInstanceForApplication(reactContext.getApplicationContext());
     }
 
-
     @Override
     public String getName() {
         return "Ble";
     }
-
 
     @ReactMethod
     public void startMonitoringRegion() {
@@ -97,10 +95,7 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
         Log.e(TAG, e.getMessage());
         return;
       }
-
-
     }
-
 
     @ReactMethod
     public void stopMonitoringRegion() {
@@ -146,7 +141,6 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
       }
     }
 
-
     @ReactMethod
     public void stopRangingRegion() {
       try {
@@ -167,9 +161,7 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
         Log.e(TAG, e.getMessage());
         return;
       }
-
     }
-
 
     @SuppressLint("NewApi")
     @ReactMethod
@@ -191,13 +183,12 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
       Class mainActivityClass = null;
       try {
         mainActivityClass = getMainActivityClassName(context);
+
       } catch (ClassNotFoundException e) {
         Log.e(TAG, "Can't get Class for MainActivity");
         e.printStackTrace();
         return;
       }
-
-      Log.d(TAG, "MainActivity Classname: " + mainActivityClass.getName());
 
       //Notification.Builder builder = new Notification.Builder(context);
       Notification.Builder builder = new Notification.Builder(reactContext, "co.airwe.scanNotification");
@@ -242,6 +233,7 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
 
       mBeaconManager.bind(this);
     }
+
 
     // LifecycleEventListener
 
@@ -312,7 +304,6 @@ public class BleModule extends ReactContextBaseJavaModule implements LifecycleEv
     }
 
     // Private Methods
-
 
     private Region getDefaultRegion() {
 
