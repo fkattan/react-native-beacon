@@ -2,11 +2,11 @@
 
 ## Getting started
 
-`$ npm install react-native-ble --save`
+`$ npm install @fkattan/react-native-ble --save`
 
 ### Mostly automatic installation
 
-`$ react-native link react-native-ble`
+`$ react-native link @fkattan/react-native-ble`
 
 ## Usage
 ```javascript
