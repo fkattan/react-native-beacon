@@ -1,4 +1,4 @@
-package co.airwe;
+package co.airwe.ble;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,7 +8,8 @@ import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
-import com.facebook.react.bridge.JavaScriptModule;
+
+import co.airwe.ble.BleModule;
 
 public class BlePackage implements ReactPackage {
     @Override

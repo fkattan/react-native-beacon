@@ -23,3 +23,6 @@ android/gradlew.bat
 buck-out/
 \.buckd/
 *.keystore
+
+# NPM Pack
+*.tgz
