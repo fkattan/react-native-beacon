@@ -1,7 +1,7 @@
 {
   "name": "@fkattan/react-native-ble",
   "title": "React Native Ble",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "TODO",
   "main": "index.js",
   "scripts": {
